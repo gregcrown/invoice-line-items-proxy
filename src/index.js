@@ -1,17 +1,5 @@
 export default {
   async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    const invoiceId = url.searchParams.get("invoiceId");
-    const projectId = url.searchParams.get("projectId");
-    const limit = parseInt(url.searchParams.get("limit") || "20");
-
-    if (!invoiceId) {
-      return new Response(JSON.stringify({ error: "Missing invoiceId" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
     try {
       const response = await fetch("https://app.innergy.com/api/invoiceLineItems", {
         headers: {
@@ -26,25 +14,43 @@ export default {
         });
       }
 
-      const result = await response.json();
-      let items = result.data || [];
+      const data = await response.json();
+      const result = [];
 
-      // Filter by invoiceId
-      items = items.filter(item => item.invoiceId === invoiceId);
+      for (const group of data) {
+        const { Project, ProjectManager, Items } = group;
 
-      // Optional projectId filter
-      if (projectId) {
-        items = items.filter(item => item.projectId === projectId);
+        for (const item of Items) {
+          result.push({
+            invoiceNumber: item.InvoiceNumber,
+            lineNumber: item.LineNumber,
+            invoiceDate: item.InvoiceDate,
+            invoiceDueDate: item.InvoiceDueDate,
+            billingType: item.BillingType,
+            description: item.Description,
+            projectNumber: Project?.ProjectNumber,
+            projectName: Project?.ProjectName,
+            projectManager: ProjectManager?.FullName,
+            customer: item.Customer,
+            companyName: item.CompanyName,
+            generalContractorName: item.GeneralContractorName,
+            invoicedAmount: item.InvoicedAmount?.Value ?? 0,
+            amountToBill: item.AmountToBill?.Cash?.Value ?? 0,
+            salesTax: item.SalesTax?.Value ?? 0,
+            exportedBy: item.ExportedBy ?? '',
+            exportedDate: item.ExportedDate ?? ''
+          });
+        }
       }
 
-      return new Response(JSON.stringify(items.slice(0, limit)), {
-        headers: { "Content-Type": "application/json" },
+      return new Response(JSON.stringify(result), {
+        headers: { "Content-Type": "application/json" }
       });
 
     } catch (err) {
       return new Response(JSON.stringify({ error: "Internal error", detail: err.message }), {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" }
       });
     }
   }
