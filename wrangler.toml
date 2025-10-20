@@ -1,0 +1,6 @@
+name = "invoice-line-items-proxy"
+main = "src/index.js"
+compatibility_date = "2023-10-01"
+
+[vars]
+INNERGY_API_KEY = "your-api-key-goes-here"
