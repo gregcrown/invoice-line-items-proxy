@@ -1,9 +1,18 @@
 export default {
   async fetch(request, env, ctx) {
+    const incomingApiKey = request.headers.get("Api-Key");
+
+    if (incomingApiKey !== env.INNERGY_API_KEY) {
+      return new Response(JSON.stringify({ error: "Unauthorized: Invalid Api-Key" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
     try {
       const response = await fetch("https://app.innergy.com/api/invoiceLineItems", {
         headers: {
-          "Api-Key": env.INNERGY_API_KEY
+          "Api-Key": incomingApiKey
         }
       });
 
@@ -18,28 +27,28 @@ export default {
       const groups = await response.json();
       const result = [];
 
-      for (const group of groups) {
-        const { project, projectManager, items } = group;
+      for (const group of groups.Items) {
+        const { Project, ProjectManager, Items } = group;
 
-        for (const item of items) {
+        for (const item of Items) {
           result.push({
-            invoiceNumber: item.invoiceNumber,
-            lineNumber: item.lineNumber,
-            invoiceDate: item.invoiceDate,
-            invoiceDueDate: item.invoiceDueDate,
-            billingType: item.billingType,
-            description: item.description,
-            projectNumber: project?.projectNumber,
-            projectName: project?.projectName,
-            projectManager: projectManager?.fullName,
-            customer: item.customer,
-            companyName: item.companyName,
-            generalContractorName: item.generalContractorName,
-            invoicedAmount: item.invoicedAmount?.value ?? 0,
-            amountToBill: item.amountToBill?.cash?.value ?? 0,
-            salesTax: item.salesTax?.value ?? 0,
-            exportedBy: item.exportedBy ?? '',
-            exportedDate: item.exportedDate ?? ''
+            invoiceNumber: item.InvoiceNumber,
+            lineNumber: item.LineNumber,
+            invoiceDate: item.InvoiceDate,
+            invoiceDueDate: item.InvoiceDueDate,
+            billingType: item.BillingType,
+            description: item.Description,
+            projectNumber: Project?.ProjectNumber,
+            projectName: Project?.ProjectName,
+            projectManager: ProjectManager?.FullName,
+            customer: item.Customer,
+            companyName: item.CompanyName,
+            generalContractorName: item.GeneralContractorName,
+            invoicedAmount: item.InvoicedAmount?.Value ?? 0,
+            amountToBill: item.AmountToBill?.Cash?.Value ?? 0,
+            salesTax: item.SalesTax?.Value ?? 0,
+            exportedBy: item.ExportedBy ?? '',
+            exportedDate: item.ExportedDate ?? ''
           });
         }
       }
